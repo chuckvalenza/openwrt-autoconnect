@@ -1,0 +1,36 @@
+#!/bin/sh
+# captive portal auto-login script
+
+testdomain="http://captive.apple.com"
+useragent="Mozilla/5.0 (Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0"
+fetch="$(command -v curl)"
+
+if [ `curl ${testdomain} -s | grep Success | wc -l` -gt 0 ]; then
+	echo "Already connected."
+else
+	# post request/login
+	echo "Attempting to reconnect."
+
+	# debian 10
+	# domain=`curl ${testdomain} -I -s | grep --color=no -oP "(\d+\.){3}\d+\:\d+"`
+
+	# openwrt 18.06.1
+	domain=`curl ${testdomain} -I -s | grep -oe "\(\d\+\.\)\{3\}\(\d\+\):\(\d\+\)"`
+
+	H1="Host: "$domain
+	H2="Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+	H3="Accept-Language: en-US,en;q=0.5"
+	H4="Accept-Encoding: gzip, deflate"
+	H5="Content-Type: application/x-www-form-urlencoded"
+	H6="Content-Length: 70"
+	H7="Origin: http://"$domain
+	H8="DNT: 1"
+	H9="Connection: close"
+	H10="Referer: http://"$domain"/user/guest_tou.asp?origurl=http%3a%2f%2fexample%2ecom%2f&langname=en%5fUS"
+	H11="Upgrade-Insecure-Requests: 1"
+	URL="http://"$domain"/forms/guest_toued"
+	DATA_BIN="origurl=http%253a%252f%252fexample%252ecom%252f&ok=Accept+and+Continue"
+
+	response=$(curl -i -s -k -X POST --user-agent "$useragent" -H "$H1" -H "$H2" -H "$H3" -H "$H4" -H "$H5" -H "$H6" -H "$H7" -H "$H8" -H "$H9" -H "$H10" -H "$H11" --data-binary "$DATA_BIN" "$URL")
+fi
+
